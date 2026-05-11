@@ -1,1 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>申し込みフォーム</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f7f7f7;
+      padding: 20px;
+    }
+    .container {
+      max-width: 520px;
+      margin: auto;
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+    }
+    label {
+      display: block;
+      margin-top: 14px;
+      font-weight: bold;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    button {
+      margin-top: 24px;
+      background: #06c755;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    .error {
+      color: red;
+      margin-top: 10px;
+    }
+    .success {
+      color: green;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>申し込みフォーム</h2>
 
+    <form id="applyForm">
+      <label>買取方法</label>
+      <select name="purchaseMethod" required>
+        <option value="">選択してください</option>
+        <option value="先払い買取">先払い買取</option>
+        <option value="郵送買取">郵送買取</option>
+      </select>
+
+      <label>買取商品</label>
+      <select name="product" required>
+        <option value="">選択してください</option>
+        <option value="全国百貨店共通商品券">全国百貨店共通商品券</option>
+        <option value="VJAギフトカード">VJAギフトカード</option>
+        <option value="JCBギフトカード">JCBギフトカード</option>
+      </select>
+
+      <label>お名前（スペース無し）</label>
+      <input type="text" name="name" required />
+
+      <label>フリガナ（スペース無し・全角カタカナ）</label>
+      <input type="text" name="furigana" required />
+
+      <label>生年月日（西暦）</label>
+      <input type="date" name="birthday" required />
+
+      <label>ご住所</label>
+      <textarea name="address" rows="3" required></textarea>
+
+      <label>メールアドレス</label>
+      <input type="email" name="email" required />
+
+      <label>勤務先名</label>
+      <input type="text" name="workplace" required />
+
+      <label>給料日</label>
+      <select name="payday" required>
+        <option value="">選択してください</option>
+        <option value="1日">1日</option>
+        <option value="2日">2日</option>
+        <option value="3日">3日</option>
+        <option value="4日">4日</option>
+        <option value="5日">5日</option>
+        <option value="6日">6日</option>
+        <option value="7日">7日</option>
+        <option value="8日">8日</option>
+        <option value="9日">9日</option>
+        <option value="10日">10日</option>
+        <option value="11日">11日</option>
+        <option value="12日">12日</option>
+        <option value="13日">13日</option>
+        <option value="14日">14日</option>
+        <option value="15日">15日</option>
+        <option value="16日">16日</option>
+        <option value="17日">17日</option>
+        <option value="18日">18日</option>
+        <option value="19日">19日</option>
+        <option value="20日">20日</option>
+        <option value="21日">21日</option>
+        <option value="22日">22日</option>
+        <option value="23日">23日</option>
+        <option value="24日">24日</option>
+        <option value="25日">25日</option>
+        <option value="26日">26日</option>
+        <option value="27日">27日</option>
+        <option value="28日">28日</option>
+        <option value="29日">29日</option>
+        <option value="30日">30日</option>
+        <option value="31日">31日</option>
+        <option value="末日">末日</option>
+      </select>
+
+      <label>給料日が休日の場合</label>
+      <select name="holidayPayRule" required>
+        <option value="">選択してください</option>
+        <option value="前平日支給">前平日支給</option>
+        <option value="翌平日支給">翌平日支給</option>
+      </select>
+
+      <label>雇用形態</label>
+      <select name="employmentType" required>
+        <option value="">選択してください</option>
+        <option value="正社員">正社員</option>
+        <option value="アルバイト">アルバイト</option>
+        <option value="派遣社員">派遣社員</option>
+        <option value="契約社員">契約社員</option>
+        <option value="個人事業主">個人事業主</option>
+        <option value="会社経営者">会社経営者</option>
+      </select>
+
+      <button type="submit" id="submitBtn">送信する</button>
+      <div id="message"></div>
+    </form>
+  </div>
+
+  <script>
+    const GAS_URL = "GAS_WEB_APP_URL_HERE";
+    const LIFF_ID = "LIFF_ID_HERE";
+
+    let lineUserId = "";
+
+    function createUUID() {
+      return crypto.randomUUID();
+    }
+
+    function hasSpace(value) {
+      return /\s/.test(value);
+    }
+
+    function isFullWidthKatakana(value) {
+      return /^[ァ-ヶー]+$/.test(value);
+    }
+
+    async function initLiff() {
+      await liff.init({ liffId: LIFF_ID });
+
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+
+      const profile = await liff.getProfile();
+      lineUserId = profile.userId;
+    }
+
+    initLiff().catch(error => {
+      console.error(error);
+      document.getElementById("message").innerHTML =
+        `<p class="error">LINE情報の取得に失敗しました。</p>`;
+    });
+
+    document.getElementById("applyForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      const message = document.getElementById("message");
+      const submitBtn = document.getElementById("submitBtn");
+      message.innerHTML = "";
+
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+
+      if (!lineUserId) {
+        message.innerHTML = `<p class="error">LINE内からフォームを開いてください。</p>`;
+        return;
+      }
+
+      if (hasSpace(data.name)) {
+        message.innerHTML = `<p class="error">お名前にスペースは使用できません。</p>`;
+        return;
+      }
+
+      if (hasSpace(data.furigana)) {
+        message.innerHTML = `<p class="error">フリガナにスペースは使用できません。</p>`;
+        return;
+      }
+
+      if (!isFullWidthKatakana(data.furigana)) {
+        message.innerHTML = `<p class="error">フリガナは全角カタカナで入力してください。</p>`;
+        return;
+      }
+
+      const payload = {
+        uuid: createUUID(),
+        lineUserId: lineUserId,
+        purchaseMethod: data.purchaseMethod,
+        product: data.product,
+        name: data.name,
+        furigana: data.furigana,
+        birthday: data.birthday,
+        address: data.address,
+        email: data.email,
+        workplace: data.workplace,
+        payday: data.payday,
+        holidayPayRule: data.holidayPayRule,
+        employmentType: data.employmentType
+      };
+
+      try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "送信中...";
+
+        await fetch(GAS_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        message.innerHTML = `<p class="success">送信が完了しました。</p>`;
+        e.target.reset();
+
+      } catch (error) {
+        console.error(error);
+        message.innerHTML = `<p class="error">送信に失敗しました。</p>`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "送信する";
+      }
+    });
+  </script>
+</body>
+</html>
